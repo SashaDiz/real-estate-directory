@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { properties, filterOptions } from '../data/properties';
+import { filterOptions } from '../data/properties';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -98,7 +98,7 @@ const AdminPage = () => {
       } else {
         setLoginError(data.error || 'Ошибка входа');
       }
-    } catch (err) {
+    } catch {
       setLoginError('Ошибка входа');
     }
   };
@@ -109,11 +109,13 @@ const AdminPage = () => {
     localStorage.removeItem('admin_token');
   };
 
-  const handleAddProperty = async (e) => {
+  const handleAddOrEditProperty = async (e) => {
     e.preventDefault();
+    const method = editMode ? 'PUT' : 'POST';
+    const url = editMode ? `${API_URL}/properties/${editId}` : `${API_URL}/properties`;
     try {
-      const res = await fetch(`${API_URL}/properties`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -122,50 +124,58 @@ const AdminPage = () => {
       });
       if (res.ok) {
         const property = await res.json();
-        setProperties(prev => [property, ...prev]);
-        setNewProperty({
-          title: '', type: '', status: '', price: '', area: '', location: '', address: '', layout: '', description: '', images: [], coordinates: [], agent: { name: '', phone: '', email: '' }, isFeatured: false, investmentReturn: ''
-        });
+        if (editMode) {
+          setProperties(prev => prev.map(p => (p._id === editId ? property : p)));
+        } else {
+          setProperties(prev => [property, ...prev]);
+        }
+        handleCancelEdit();
       } else {
         const data = await res.json();
-        alert(data.error || 'Ошибка добавления');
+        alert(data.error || 'Ошибка сохранения');
       }
     } catch {
-      alert('Ошибка добавления');
+      alert('Ошибка сохранения');
     }
   };
 
-  const getSortedProperties = () => {
-    const sorted = [...properties];
-    
-    switch (sortBy) {
-      case 'recently-modified':
-        return sorted.sort((a, b) => {
-          const dateA = a.updatedAt || a.createdAt || new Date(0);
-          const dateB = b.updatedAt || b.createdAt || new Date(0);
-          return new Date(dateB) - new Date(dateA);
-        });
-      case 'recently-added':
-        return sorted.sort((a, b) => {
-          const dateA = a.createdAt || new Date(0);
-          const dateB = b.createdAt || new Date(0);
-          return new Date(dateB) - new Date(dateA);
-        });
-      case 'title-az':
-        return sorted.sort((a, b) => a.title.localeCompare(b.title));
-      case 'title-za':
-        return sorted.sort((a, b) => b.title.localeCompare(a.title));
-      case 'price-high-low':
-        return sorted.sort((a, b) => b.price - a.price);
-      case 'price-low-high':
-        return sorted.sort((a, b) => a.price - b.price);
-      case 'area-high-low':
-        return sorted.sort((a, b) => b.area - a.area);
-      case 'area-low-high':
-        return sorted.sort((a, b) => a.area - b.area);
-      default:
-        return sorted;
-    }
+  const handleEditProperty = (property) => {
+    setEditMode(true);
+    setEditId(property._id);
+    setNewProperty({
+      ...property,
+      price: property.price.toString(),
+      area: property.area.toString(),
+      coordinates: property.coordinates ? property.coordinates.map(String) : [],
+      images: [], // don't prefill images, user can re-upload if needed
+    });
+    setUploadedImages(property.images || []);
+    setImagePreviews([]);
+    setImageLimitError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditId(null);
+    setNewProperty({
+      title: '',
+      type: '',
+      status: '',
+      price: '',
+      area: '',
+      location: '',
+      address: '',
+      layout: '',
+      description: '',
+      images: [],
+      coordinates: [],
+      agent: { name: '', phone: '', email: '' },
+      isFeatured: false,
+      investmentReturn: ''
+    });
+    setImagePreviews([]);
+    setUploadedImages([]);
+    setImageLimitError('');
   };
 
   const handlePropertyChange = (field, value) => {
@@ -249,96 +259,6 @@ const AdminPage = () => {
     }
   };
 
-  const handleEditProperty = (property) => {
-    setEditMode(true);
-    setEditId(property.id);
-    setNewProperty({
-      ...property,
-      price: property.price.toString(),
-      area: property.area.toString(),
-      coordinates: property.coordinates ? property.coordinates.map(String) : [],
-      images: [], // don't prefill images, user can re-upload if needed
-    });
-    setUploadedImages(property.images || []);
-    setImagePreviews([]);
-    setImageLimitError('');
-  };
-
-  const handleCancelEdit = () => {
-    setEditMode(false);
-    setEditId(null);
-    setNewProperty({
-      title: '',
-      type: '',
-      status: '',
-      price: '',
-      area: '',
-      location: '',
-      address: '',
-      layout: '',
-      description: '',
-      images: [],
-      coordinates: [],
-      agent: { name: '', phone: '', email: '' },
-      isFeatured: false,
-      investmentReturn: ''
-    });
-    setImagePreviews([]);
-    setUploadedImages([]);
-    setImageLimitError('');
-  };
-
-  const handleAddOrEditProperty = (e) => {
-    e.preventDefault();
-    if (editMode) {
-      const idx = properties.findIndex(p => p.id === editId);
-      if (idx !== -1) {
-        properties[idx] = {
-          ...newProperty,
-          id: editId,
-          price: parseFloat(newProperty.price),
-          area: parseFloat(newProperty.area),
-          coordinates: newProperty.coordinates.map(Number),
-          images: uploadedImages,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      handleCancelEdit();
-    } else {
-      const newId = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
-      const propertyToAdd = {
-        ...newProperty,
-        id: newId,
-        price: parseFloat(newProperty.price),
-        area: parseFloat(newProperty.area),
-        coordinates: newProperty.coordinates.map(Number),
-        images: uploadedImages,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      properties.push(propertyToAdd);
-      setNewProperty({
-        title: '',
-        type: '',
-        status: '',
-        price: '',
-        area: '',
-        location: '',
-        address: '',
-        layout: '',
-        description: '',
-        images: [],
-        coordinates: [],
-        agent: { name: '', phone: '', email: '' },
-        isFeatured: false,
-        investmentReturn: ''
-      });
-      setImagePreviews([]);
-      setUploadedImages([]);
-      setImageLimitError('');
-    }
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'Не указано';
     const date = new Date(dateString);
@@ -419,10 +339,10 @@ const AdminPage = () => {
       </div>
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Добавить объект</CardTitle>
+          <CardTitle>{editMode ? 'Редактировать объект' : 'Добавить объект'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAddProperty} className="space-y-4">
+          <form onSubmit={handleAddOrEditProperty} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="title">Заголовок</Label>
@@ -563,7 +483,7 @@ const AdminPage = () => {
               <Label htmlFor="isFeatured">Рекомендуемый объект</Label>
             </div>
             <div className="flex gap-2">
-              <Button type="submit">{editMode ? 'Сохранить изменения' : 'Добавить объект'}</Button>
+              <Button type="submit">{editMode ? 'Сохранить изменения' : 'Добавить'}</Button>
               {editMode && (
                 <Button type="button" variant="outline" onClick={handleCancelEdit}>Отмена</Button>
               )}
@@ -604,8 +524,8 @@ const AdminPage = () => {
             <p>Нет объектов для отображения.</p>
           ) : (
             <div className="space-y-4">
-              {getSortedProperties().map((property) => (
-                <div key={property.id} className="flex items-center justify-between border p-4 rounded-md">
+              {properties.map((property) => (
+                <div key={property._id || property.id} className="flex items-center justify-between border p-4 rounded-md">
                   <div>
                     <h3 className="font-semibold">{property.title}</h3>
                     <p className="text-sm text-gray-600">{property.location} - {property.type}</p>
@@ -618,12 +538,12 @@ const AdminPage = () => {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Label htmlFor={`featured-${property.id}`}>Рекомендуемый</Label>
+                    <Label htmlFor={`featured-${property._id || property.id}`}>Рекомендуемый</Label>
                     <Switch
-                      id={`featured-${property.id}`}
+                      id={`featured-${property._id || property.id}`}
                       checked={property.isFeatured}
                       onCheckedChange={(checked) => {
-                        const index = properties.findIndex(p => p.id === property.id);
+                        const index = properties.findIndex(p => p._id === property._id || p.id === property.id);
                         if (index !== -1) {
                           properties[index].isFeatured = checked;
                           properties[index].updatedAt = new Date().toISOString();
@@ -634,7 +554,7 @@ const AdminPage = () => {
                     <Button type="button" size="sm" variant="outline" onClick={() => handleEditProperty(property)}>
                       Редактировать
                     </Button>
-                    <AlertDialog open={deleteDialogOpen && propertyToDelete?.id === property.id} onOpenChange={(open) => { if (!open) handleCancelDeleteProperty(); }}>
+                    <AlertDialog open={deleteDialogOpen && propertyToDelete?.id === property._id || property.id} onOpenChange={(open) => { if (!open) handleCancelDeleteProperty(); }}>
                       <AlertDialogTrigger asChild>
                         <Button type="button" size="sm" variant="destructive" onClick={() => handleRequestDeleteProperty(property)}>
                           Удалить
