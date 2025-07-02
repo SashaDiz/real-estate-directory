@@ -1,10 +1,14 @@
 # Production-ready Dockerfile for Vite React app
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Install dependencies first (better caching)
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code and build
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 # Use nginx to serve static files
 FROM nginx:alpine AS production

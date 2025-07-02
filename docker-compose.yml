@@ -7,19 +7,22 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
-    depends_on:
-      - db
     # Uncomment if you want to use .env file
     # env_file:
     #   - .env
-  db:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: realestate
-    volumes:
-      - db_data:/var/lib/postgresql/data
-volumes:
-  db_data: 
+
+  # Optional: Uncomment if you need a database
+  # db:
+  #   image: postgres:15-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: realestate
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   db_data: 
