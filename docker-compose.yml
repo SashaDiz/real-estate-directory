@@ -7,23 +7,37 @@ services:
       - "8443:443"  # HTTPS: host 8443 -> container 443
     environment:
       - NODE_ENV=production
+      - VITE_API_URL=http://backend:4000/api
     restart: unless-stopped
+    depends_on:
+      - backend
     # Uncomment if you want to use .env file
     # env_file:
     #   - .env
 
-  # Optional: Uncomment if you need a database
-  # db:
-  #   image: postgres:15-alpine
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: realestate
-  #   volumes:
-  #     - db_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://db:27017/realestate
+      - PORT=4000
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  db:
+    image: mongo:7.0
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
 
 # volumes:
 #   db_data: 
