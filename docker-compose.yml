@@ -3,7 +3,8 @@ services:
   app:
     build: .
     ports:
-      - "80:80"
+      - "8080:80"   # HTTP: host 8080 -> container 80
+      - "8443:443"  # HTTPS: host 8443 -> container 443
     environment:
       - NODE_ENV=production
     restart: unless-stopped
