@@ -1,15 +1,17 @@
-# Production-ready Dockerfile for Vite React app
+# Alternative Dockerfile with better network handling
 FROM node:20-alpine AS builder
-WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install system dependencies and pnpm
+RUN apk add --no-cache git && \
+    npm install -g pnpm --registry=https://registry.npmjs.org/
+
+WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install
+# Install dependencies with retry mechanism
+RUN pnpm install --frozen-lockfile --network-timeout=100000
 
 # Copy source code and build
 COPY . .
