@@ -1,24 +1,13 @@
-# Production-ready Dockerfile for Vite React app
+# Frontend Dockerfile (multi-stage)
 FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Install pnpm globally
-RUN npm install -g pnpm
-
-# Copy package files
 COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install
-
-# Copy source code and build
+RUN npm install
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
-# Use nginx to serve static files
-FROM nginx:alpine AS production
+FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY ./nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
-ENV NODE_ENV=production
 CMD ["nginx", "-g", "daemon off;"] 

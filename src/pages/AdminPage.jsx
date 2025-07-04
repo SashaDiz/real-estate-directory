@@ -22,13 +22,6 @@ import {
 const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminPage = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
-
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -61,53 +54,18 @@ const AdminPage = () => {
   const [sortBy, setSortBy] = useState('recently-modified');
 
   useEffect(() => {
-    if (!loggedIn && token) {
-      setLoggedIn(true);
-    }
-    if (loggedIn) {
-      setLoading(true);
-      fetch(`${API_URL}/properties`)
-        .then(res => res.json())
-        .then(data => {
-          setProperties(data);
-          setLoading(false);
-        })
-        .catch(() => {
-          setFetchError('Ошибка загрузки данных');
-          setLoading(false);
-        });
-    }
-  }, [loggedIn, token]);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    try {
-      const res = await fetch(`${API_URL.replace(/\/$/, '')}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+    setLoading(true);
+    fetch(`${API_URL}/properties`)
+      .then(res => res.json())
+      .then(data => {
+        setProperties(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setFetchError('Ошибка загрузки данных');
+        setLoading(false);
       });
-      const data = await res.json();
-      if (res.ok && data.token) {
-        setToken(data.token);
-        setLoggedIn(true);
-        if (rememberMe) {
-          localStorage.setItem('admin_token', data.token);
-        }
-      } else {
-        setLoginError(data.error || 'Ошибка входа');
-      }
-    } catch {
-      setLoginError('Ошибка входа');
-    }
-  };
-
-  const handleLogout = () => {
-    setLoggedIn(false);
-    setToken('');
-    localStorage.removeItem('admin_token');
-  };
+  }, []);
 
   const handleAddOrEditProperty = async (e) => {
     e.preventDefault();
@@ -118,7 +76,6 @@ const AdminPage = () => {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(newProperty)
       });
@@ -297,289 +254,254 @@ const AdminPage = () => {
     setDeleteDialogOpen(false);
   };
 
-  if (!loggedIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md p-6">
-          <CardHeader>
-            <CardTitle>Вход в админ-панель</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <Input
-                placeholder="Имя пользователя"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                required
-              />
-              <Input
-                type="password"
-                placeholder="Пароль"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-              <label className="flex items-center">
-                <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="mr-2" /> Запомнить меня
-              </label>
-              {loginError && <div className="text-red-500 text-sm">{loginError}</div>}
-              <Button type="submit" className="w-full">Войти</Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen py-8 px-4 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Админ-панель</h1>
-        <Button onClick={handleLogout}>Выйти</Button>
       </div>
-      <Card className="mb-8">
-        <CardHeader>
+        <Card className="mb-8">
+          <CardHeader>
           <CardTitle>{editMode ? 'Редактировать объект' : 'Добавить объект'}</CardTitle>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
           <form onSubmit={handleAddOrEditProperty} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Заголовок</Label>
-                <Input id="title" value={newProperty.title} onChange={(e) => handlePropertyChange('title', e.target.value)} required />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Заголовок</Label>
+                  <Input id="title" value={newProperty.title} onChange={(e) => handlePropertyChange('title', e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="type">Тип недвижимости</Label>
+                  <Select value={newProperty.type} onValueChange={(value) => handlePropertyChange('type', value)} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите тип" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterOptions.types.filter(type => type.value !== 'all').map(type => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status">Статус</Label>
+                  <Select value={newProperty.status} onValueChange={(value) => handlePropertyChange('status', value)} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите статус" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterOptions.status.filter(status => status.value !== 'all').map(status => (
+                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="price">Цена</Label>
+                  <Input id="price" type="number" value={newProperty.price} onChange={(e) => handlePropertyChange('price', e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="area">Площадь (кв.м)</Label>
+                  <Input id="area" type="number" value={newProperty.area} onChange={(e) => handlePropertyChange('area', e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="location">Местоположение</Label>
+                  <Input id="location" value={newProperty.location} onChange={(e) => handlePropertyChange('location', e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="address">Адрес</Label>
+                  <Input id="address" value={newProperty.address} onChange={(e) => handlePropertyChange('address', e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="layout">Планировка</Label>
+                  <Input id="layout" value={newProperty.layout} onChange={(e) => handlePropertyChange('layout', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="investmentReturn">Доходность (например, 'до 30% в год')</Label>
+                  <Input id="investmentReturn" value={newProperty.investmentReturn} onChange={(e) => handlePropertyChange('investmentReturn', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="coordinates">Координаты (широта, долгота)</Label>
+                  <Input id="coordinates" placeholder="например, 40.7128, -74.0060" value={newProperty.coordinates.join(', ')} onChange={(e) => handlePropertyChange('coordinates', e.target.value.split(',').map(s => s.trim()))} />
+                </div>
               </div>
               <div>
-                <Label htmlFor="type">Тип недвижимости</Label>
-                <Select value={newProperty.type} onValueChange={(value) => handlePropertyChange('type', value)} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите тип" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filterOptions.types.filter(type => type.value !== 'all').map(type => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                <Label htmlFor="description">Описание</Label>
+                <Textarea id="description" value={newProperty.description} onChange={(e) => handlePropertyChange('description', e.target.value)} rows={4} required />
+              </div>
+              <div>
+                <Label htmlFor="images">Изображения (загрузите файлы, максимум 10)</Label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'} ${uploadedImages.length >= 10 ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current && fileInputRef.current.click(); }}
+                  aria-label="Перетащите изображения или кликните для выбора файлов"
+                >
+                  {uploadedImages.length + imagePreviews.length < 10 ? (
+                    <span>Перетащите изображения сюда или <span className="underline text-blue-600">выберите файлы</span></span>
+                  ) : (
+                    <span>Достигнут лимит в 10 изображений</span>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    id="images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageSelect}
+                    disabled={uploadedImages.length >= 10}
+                    className="hidden"
+                  />
+                </div>
+                {imageLimitError && <div className="text-red-500 text-sm mt-1">{imageLimitError}</div>}
+                {imagePreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {imagePreviews.map((src, idx) => (
+                      <div key={idx} className="relative inline-block">
+                        <img src={src} alt={`preview-${idx}`} className="w-20 h-20 object-cover rounded border" />
+                        <button type="button" onClick={() => handleRemovePreviewImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="status">Статус</Label>
-                <Select value={newProperty.status} onValueChange={(value) => handlePropertyChange('status', value)} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите статус" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filterOptions.status.filter(status => status.value !== 'all').map(status => (
-                      <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="price">Цена</Label>
-                <Input id="price" type="number" value={newProperty.price} onChange={(e) => handlePropertyChange('price', e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="area">Площадь (кв.м)</Label>
-                <Input id="area" type="number" value={newProperty.area} onChange={(e) => handlePropertyChange('area', e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="location">Местоположение</Label>
-                <Input id="location" value={newProperty.location} onChange={(e) => handlePropertyChange('location', e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="address">Адрес</Label>
-                <Input id="address" value={newProperty.address} onChange={(e) => handlePropertyChange('address', e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="layout">Планировка</Label>
-                <Input id="layout" value={newProperty.layout} onChange={(e) => handlePropertyChange('layout', e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="investmentReturn">Доходность (например, 'до 30% в год')</Label>
-                <Input id="investmentReturn" value={newProperty.investmentReturn} onChange={(e) => handlePropertyChange('investmentReturn', e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="coordinates">Координаты (широта, долгота)</Label>
-                <Input id="coordinates" placeholder="например, 40.7128, -74.0060" value={newProperty.coordinates.join(', ')} onChange={(e) => handlePropertyChange('coordinates', e.target.value.split(',').map(s => s.trim()))} />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="description">Описание</Label>
-              <Textarea id="description" value={newProperty.description} onChange={(e) => handlePropertyChange('description', e.target.value)} rows={4} required />
-            </div>
-            <div>
-              <Label htmlFor="images">Изображения (загрузите файлы, максимум 10)</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'} ${uploadedImages.length >= 10 ? 'opacity-50 pointer-events-none' : ''}`}
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                tabIndex={0}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current && fileInputRef.current.click(); }}
-                aria-label="Перетащите изображения или кликните для выбора файлов"
-              >
-                {uploadedImages.length + imagePreviews.length < 10 ? (
-                  <span>Перетащите изображения сюда или <span className="underline text-blue-600">выберите файлы</span></span>
-                ) : (
-                  <span>Достигнут лимит в 10 изображений</span>
+                  </div>
                 )}
-                <input
-                  ref={fileInputRef}
-                  id="images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  disabled={uploadedImages.length >= 10}
-                  className="hidden"
+                {imagePreviews.length > 0 && (
+                  <Button type="button" className="mt-2" onClick={handleUploadImages}>Загрузить выбранные изображения</Button>
+                )}
+                {uploadedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {uploadedImages.map((src, idx) => (
+                      <div key={idx} className="relative inline-block">
+                        <img src={src} alt={`uploaded-${idx}`} className="w-20 h-20 object-cover rounded border" />
+                        <button type="button" onClick={() => handleRemoveUploadedImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="agentName">Имя агента</Label>
+                  <Input id="agentName" value={newProperty.agent.name} onChange={(e) => handleAgentChange('name', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="agentPhone">Телефон агента</Label>
+                  <Input id="agentPhone" value={newProperty.agent.phone} onChange={(e) => handleAgentChange('phone', e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="agentEmail">Email агента</Label>
+                  <Input id="agentEmail" type="email" value={newProperty.agent.email} onChange={(e) => handleAgentChange('email', e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isFeatured"
+                  checked={newProperty.isFeatured}
+                  onCheckedChange={(checked) => handlePropertyChange('isFeatured', checked)}
                 />
+                <Label htmlFor="isFeatured">Рекомендуемый объект</Label>
               </div>
-              {imageLimitError && <div className="text-red-500 text-sm mt-1">{imageLimitError}</div>}
-              {imagePreviews.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {imagePreviews.map((src, idx) => (
-                    <div key={idx} className="relative inline-block">
-                      <img src={src} alt={`preview-${idx}`} className="w-20 h-20 object-cover rounded border" />
-                      <button type="button" onClick={() => handleRemovePreviewImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {imagePreviews.length > 0 && (
-                <Button type="button" className="mt-2" onClick={handleUploadImages}>Загрузить выбранные изображения</Button>
-              )}
-              {uploadedImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {uploadedImages.map((src, idx) => (
-                    <div key={idx} className="relative inline-block">
-                      <img src={src} alt={`uploaded-${idx}`} className="w-20 h-20 object-cover rounded border" />
-                      <button type="button" onClick={() => handleRemoveUploadedImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="agentName">Имя агента</Label>
-                <Input id="agentName" value={newProperty.agent.name} onChange={(e) => handleAgentChange('name', e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="agentPhone">Телефон агента</Label>
-                <Input id="agentPhone" value={newProperty.agent.phone} onChange={(e) => handleAgentChange('phone', e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="agentEmail">Email агента</Label>
-                <Input id="agentEmail" type="email" value={newProperty.agent.email} onChange={(e) => handleAgentChange('email', e.target.value)} />
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isFeatured"
-                checked={newProperty.isFeatured}
-                onCheckedChange={(checked) => handlePropertyChange('isFeatured', checked)}
-              />
-              <Label htmlFor="isFeatured">Рекомендуемый объект</Label>
-            </div>
-            <div className="flex gap-2">
+              <div className="flex gap-2">
               <Button type="submit">{editMode ? 'Сохранить изменения' : 'Добавить'}</Button>
-              {editMode && (
-                <Button type="button" variant="outline" onClick={handleCancelEdit}>Отмена</Button>
-              )}
+                {editMode && (
+                  <Button type="button" variant="outline" onClick={handleCancelEdit}>Отмена</Button>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Существующие объекты</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="sort">Сортировка:</Label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recently-modified">Недавно изменённые</SelectItem>
+                    <SelectItem value="recently-added">Недавно добавленные</SelectItem>
+                    <SelectItem value="title-az">Название А-Я</SelectItem>
+                    <SelectItem value="title-za">Название Я-А</SelectItem>
+                    <SelectItem value="price-high-low">Цена (высокая-низкая)</SelectItem>
+                    <SelectItem value="price-low-high">Цена (низкая-высокая)</SelectItem>
+                    <SelectItem value="area-high-low">Площадь (большая-маленькая)</SelectItem>
+                    <SelectItem value="area-low-high">Площадь (маленькая-большая)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Существующие объекты</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="sort">Сортировка:</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recently-modified">Недавно изменённые</SelectItem>
-                  <SelectItem value="recently-added">Недавно добавленные</SelectItem>
-                  <SelectItem value="title-az">Название А-Я</SelectItem>
-                  <SelectItem value="title-za">Название Я-А</SelectItem>
-                  <SelectItem value="price-high-low">Цена (высокая-низкая)</SelectItem>
-                  <SelectItem value="price-low-high">Цена (низкая-высокая)</SelectItem>
-                  <SelectItem value="area-high-low">Площадь (большая-маленькая)</SelectItem>
-                  <SelectItem value="area-low-high">Площадь (маленькая-большая)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
           {loading ? (
             <div>Загрузка...</div>
           ) : fetchError ? (
             <div className="text-red-500">{fetchError}</div>
           ) : properties.length === 0 ? (
-            <p>Нет объектов для отображения.</p>
-          ) : (
-            <div className="space-y-4">
+              <p>Нет объектов для отображения.</p>
+            ) : (
+              <div className="space-y-4">
               {properties.map((property) => (
                 <div key={property._id || property.id} className="flex items-center justify-between border p-4 rounded-md">
-                  <div>
-                    <h3 className="font-semibold">{property.title}</h3>
-                    <p className="text-sm text-gray-600">{property.location} - {property.type}</p>
-                    <p className="text-sm text-gray-600">Цена: {property.price} - Площадь: {property.area} кв.м</p>
-                    {property.investmentReturn && (
-                      <p className="text-sm text-green-600">Доходность: {property.investmentReturn}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {getDisplayDate(property)}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
+                    <div>
+                      <h3 className="font-semibold">{property.title}</h3>
+                      <p className="text-sm text-gray-600">{property.location} - {property.type}</p>
+                      <p className="text-sm text-gray-600">Цена: {property.price} - Площадь: {property.area} кв.м</p>
+                      {property.investmentReturn && (
+                        <p className="text-sm text-green-600">Доходность: {property.investmentReturn}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {getDisplayDate(property)}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
                     <Label htmlFor={`featured-${property._id || property.id}`}>Рекомендуемый</Label>
-                    <Switch
+                      <Switch
                       id={`featured-${property._id || property.id}`}
-                      checked={property.isFeatured}
-                      onCheckedChange={(checked) => {
+                        checked={property.isFeatured}
+                        onCheckedChange={(checked) => {
                         const index = properties.findIndex(p => p._id === property._id || p.id === property.id);
-                        if (index !== -1) {
-                          properties[index].isFeatured = checked;
-                          properties[index].updatedAt = new Date().toISOString();
-                          setNewProperty({ ...newProperty });
-                        }
-                      }}
-                    />
-                    <Button type="button" size="sm" variant="outline" onClick={() => handleEditProperty(property)}>
-                      Редактировать
-                    </Button>
+                          if (index !== -1) {
+                            properties[index].isFeatured = checked;
+                            properties[index].updatedAt = new Date().toISOString();
+                            setNewProperty({ ...newProperty });
+                          }
+                        }}
+                      />
+                      <Button type="button" size="sm" variant="outline" onClick={() => handleEditProperty(property)}>
+                        Редактировать
+                      </Button>
                     <AlertDialog open={deleteDialogOpen && propertyToDelete?.id === property._id || property.id} onOpenChange={(open) => { if (!open) handleCancelDeleteProperty(); }}>
-                      <AlertDialogTrigger asChild>
-                        <Button type="button" size="sm" variant="destructive" onClick={() => handleRequestDeleteProperty(property)}>
-                          Удалить
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Удалить объект?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Вы уверены, что хотите удалить этот объект? Это действие нельзя отменить.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={handleCancelDeleteProperty}>Отмена</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleConfirmDeleteProperty}>Удалить</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button type="button" size="sm" variant="destructive" onClick={() => handleRequestDeleteProperty(property)}>
+                            Удалить
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Удалить объект?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Вы уверены, что хотите удалить этот объект? Это действие нельзя отменить.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={handleCancelDeleteProperty}>Отмена</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmDeleteProperty}>Удалить</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 };

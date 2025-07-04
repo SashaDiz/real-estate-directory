@@ -68,18 +68,6 @@ mongoose.connect(MONGO_URI)
     console.error('MongoDB connection error', err);
   });
 
-// Auth middleware
-function auth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'No token' });
-  const token = authHeader.split(' ')[1];
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
-    req.user = user;
-    next();
-  });
-}
-
 // Register route (for initial setup, then remove or protect)
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
@@ -114,13 +102,35 @@ app.get('/api/properties', async (req, res) => {
   }
 });
 
-// Add property (protected)
-app.post('/api/properties', auth, async (req, res) => {
+// Add property (unprotected for testing)
+app.post('/api/properties', async (req, res) => {
   try {
     const property = new Property(req.body);
     await property.save();
     res.status(201).json(property);
   } catch {
     res.status(400).json({ error: 'Failed to add property' });
+  }
+});
+
+// Edit property (unprotected for testing)
+app.put('/api/properties/:id', async (req, res) => {
+  try {
+    const property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+    res.json(property);
+  } catch {
+    res.status(400).json({ error: 'Failed to update property' });
+  }
+});
+
+// Delete property (unprotected for testing)
+app.delete('/api/properties/:id', async (req, res) => {
+  try {
+    const property = await Property.findByIdAndDelete(req.params.id);
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+    res.json({ success: true });
+  } catch {
+    res.status(400).json({ error: 'Failed to delete property' });
   }
 }); 
