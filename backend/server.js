@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4002;
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
@@ -46,10 +46,17 @@ const propertySchema = new mongoose.Schema({
 }, { timestamps: true });
 const Property = mongoose.model('Property', propertySchema);
 
-// Connect to MongoDB
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(() => console.error('MongoDB connection error'));
+// Connect to MongoDB and start server only after successful connection
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('MongoDB connected');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error', err);
+  });
 
 // Auth middleware
 function auth(req, res, next) {
@@ -106,8 +113,4 @@ app.post('/api/properties', auth, async (req, res) => {
   } catch {
     res.status(400).json({ error: 'Failed to add property' });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 }); 
