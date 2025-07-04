@@ -9,7 +9,17 @@ import bcrypt from 'bcryptjs';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Allow CORS from the deployed frontend domain
+const allowedOrigins = [
+  'https://real-estate-directory-fh69abds5-sashadizs-projects.vercel.app',
+  'http://localhost:5173' // (optional) allow local dev too
+];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 4002;
