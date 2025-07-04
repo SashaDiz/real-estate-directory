@@ -5,7 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { MapPin, Search, Filter, Grid, List } from 'lucide-react';
-import { properties, filterOptions } from '../data/properties';
+import { filterOptions } from '../data/properties';
+import { useProperties } from '../hooks/use-properties';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const PropertiesPage = ({ status }) => {
   const [filters, setFilters] = useState({
@@ -16,6 +19,7 @@ const PropertiesPage = ({ status }) => {
     search: ''
   });
   const [viewMode, setViewMode] = useState('grid');
+  const { properties, loading, error } = useProperties();
 
   // Filter properties based on current filters
   const filteredProperties = useMemo(() => {
@@ -57,7 +61,7 @@ const PropertiesPage = ({ status }) => {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, properties]);
 
   const formatPrice = (price) => {
     if (price >= 1000000) {
@@ -85,6 +89,9 @@ const PropertiesPage = ({ status }) => {
     if (status === 'for-rent') return 'Properties For Rent';
     return 'All Properties';
   };
+
+  if (loading) return <div className="text-center py-12">Загрузка...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen py-8">

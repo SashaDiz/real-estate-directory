@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Building2, Store, Factory, TreePine, Car, Home } from 'lucide-react';
-import { properties, filterOptions } from '../data/properties';
+import { filterOptions } from '../data/properties';
+import { useProperties } from '../hooks/use-properties';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default markers in react-leaflet
@@ -17,9 +18,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const MapPage = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const { properties, loading, error } = useProperties();
+
+  if (loading) return <div className="text-center py-12">Загрузка...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   // Filter properties based on selected filters
   const filteredProperties = properties.filter(property => {

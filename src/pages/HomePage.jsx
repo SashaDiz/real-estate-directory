@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Building2, Store, Factory, TreePine, DollarSign, TrendingUp } from 'lucide-react';
-import { properties, filterOptions } from '../data/properties';
+import { filterOptions } from '../data/properties';
+import { useProperties } from '../hooks/use-properties';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +18,7 @@ const HomePage = () => {
   const [selectedAreaRange, setSelectedAreaRange] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedInvestmentReturn, setSelectedInvestmentReturn] = useState('all');
+  const { properties, loading, error } = useProperties();
 
   const propertyTypes = [
     { icon: Building2, name: 'Нежилые помещения', count: '2,450+', color: 'text-blue-600' },
@@ -31,11 +35,8 @@ const HomePage = () => {
   };
 
   const filteredProperties = useMemo(() => {
-    let filtered = properties;
-
-    // Featured properties first
+    let filtered = [...properties];
     filtered.sort((a, b) => (b.isFeatured ? 1 : -1) - (a.isFeatured ? 1 : -1));
-
     if (searchTerm) {
       filtered = filtered.filter(property =>
         property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -43,11 +44,9 @@ const HomePage = () => {
         property.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (selectedType !== 'all') {
       filtered = filtered.filter(property => property.type === selectedType);
     }
-
     if (selectedPriceRange !== 'all') {
       const [min, max] = selectedPriceRange.split('-').map(Number);
       filtered = filtered.filter(property => {
@@ -58,7 +57,6 @@ const HomePage = () => {
         }
       });
     }
-
     if (selectedAreaRange !== 'all') {
       const [min, max] = selectedAreaRange.split('-').map(Number);
       filtered = filtered.filter(property => {
@@ -69,15 +67,13 @@ const HomePage = () => {
         }
       });
     }
-
     if (selectedStatus !== 'all') {
       filtered = filtered.filter(property => property.status === selectedStatus);
     }
-
     if (selectedInvestmentReturn !== 'all') {
       const [min, max] = selectedInvestmentReturn.split('-').map(Number);
       filtered = filtered.filter(property => {
-        const returnNum = parseFloat(property.investmentReturn.replace(/[^0-9.]/g, ''));
+        const returnNum = parseFloat(property.investmentReturn?.replace(/[^0-9.]/g, '') || '0');
         if (selectedInvestmentReturn.includes('+')) {
           return returnNum >= min;
         } else {
@@ -85,9 +81,8 @@ const HomePage = () => {
         }
       });
     }
-
     return filtered;
-  }, [searchTerm, selectedType, selectedPriceRange, selectedAreaRange, selectedStatus, selectedInvestmentReturn]);
+  }, [properties, searchTerm, selectedType, selectedPriceRange, selectedAreaRange, selectedStatus, selectedInvestmentReturn]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
@@ -97,6 +92,9 @@ const HomePage = () => {
     setSelectedStatus('all');
     setSelectedInvestmentReturn('all');
   };
+
+  if (loading) return <div className="text-center py-12">Загрузка...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen">

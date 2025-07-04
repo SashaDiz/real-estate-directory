@@ -19,12 +19,15 @@ import {
   X,
   TrendingUp
 } from 'lucide-react';
-import { properties } from '../data/properties';
 import PropertyMap from '../components/PropertyMap';
+import { useProperties } from '../hooks/use-properties';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
-  const property = properties.find(p => p.id === parseInt(id));
+  const { properties, loading, error } = useProperties();
+  const property = properties.find(p => p._id === id || p.id === parseInt(id));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -34,6 +37,8 @@ const PropertyDetailPage = () => {
     message: ''
   });
 
+  if (loading) return <div className="text-center py-12">Загрузка...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
   if (!property) {
     return (
       <div className="min-h-screen py-16">
