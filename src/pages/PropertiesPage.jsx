@@ -231,7 +231,7 @@ const PropertiesPage = ({ status }) => {
             : 'space-y-6'
           }>
             {filteredProperties.map((property) => (
-              <Card key={property.id} className={`overflow-hidden hover:shadow-xl transition-shadow group ${
+              <Card key={property._id || property.id} className={`overflow-hidden hover:shadow-xl transition-shadow group ${
                 viewMode === 'list' ? 'flex flex-row' : ''
               }`}>
                 <div className={`relative overflow-hidden ${
@@ -277,7 +277,7 @@ const PropertiesPage = ({ status }) => {
                       <p className="text-sm text-gray-600">{property.area} sqm</p>
                     </div>
                     <Button asChild variant="outline" size="sm">
-                      <Link to={`/property/${property.id}`}>
+                      <Link to={`/property/${property._id || property.id}`}>
                         View Details
                       </Link>
                     </Button>

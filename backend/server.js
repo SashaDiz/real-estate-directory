@@ -5,10 +5,48 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Allow CORS from the deployed frontend domain
 const allowedOrigins = [
@@ -22,7 +60,10 @@ app.use(cors({
 
 app.use(express.json());
 
-const PORT = process.env.PORT || 4002;
+// Serve uploaded images statically
+app.use('/uploads', express.static(uploadsDir));
+
+const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
@@ -52,7 +93,9 @@ const propertySchema = new mongoose.Schema({
     email: String
   },
   isFeatured: Boolean,
-  investmentReturn: String
+  investmentReturn: String,
+  views: { type: Number, default: 0 },
+  contactRequests: { type: Number, default: 0 }
 }, { timestamps: true });
 const Property = mongoose.model('Property', propertySchema);
 
@@ -104,6 +147,7 @@ app.get('/api/properties', async (req, res) => {
 
 // Add property (unprotected for testing)
 app.post('/api/properties', async (req, res) => {
+
   try {
     const property = new Property(req.body);
     await property.save();
@@ -132,5 +176,69 @@ app.delete('/api/properties/:id', async (req, res) => {
     res.json({ success: true });
   } catch {
     res.status(400).json({ error: 'Failed to delete property' });
+  }
+});
+
+// Upload images (unprotected for testing)
+app.post('/api/upload-images', upload.array('images', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
+    }
+    
+    const imageUrls = req.files.map(file => {
+      return `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+    });
+    
+    res.json({ imageUrls });
+  } catch {
+    res.status(500).json({ error: 'Failed to upload images' });
+  }
+});
+
+// Delete image (unprotected for testing)
+app.delete('/api/delete-image/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filepath = path.join(uploadsDir, filename);
+    
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  } catch {
+    res.status(500).json({ error: 'Failed to delete image' });
+  }
+});
+
+// Increment property views (unprotected for testing)
+app.post('/api/properties/:id/view', async (req, res) => {
+  try {
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+    res.json({ views: property.views });
+  } catch {
+    res.status(400).json({ error: 'Failed to increment views' });
+  }
+});
+
+// Increment property contact requests (unprotected for testing)
+app.post('/api/properties/:id/contact-request', async (req, res) => {
+  try {
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { contactRequests: 1 } },
+      { new: true }
+    );
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+    res.json({ contactRequests: property.contactRequests });
+  } catch {
+    res.status(400).json({ error: 'Failed to increment contact requests' });
   }
 }); 

@@ -238,7 +238,7 @@ const HomePage = () => {
           {/* Property Listings */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
             {filteredProperties.map((property) => (
-              <Link key={property.id} to={`/property/${property.id}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary rounded-xl h-full">
+              <Link key={property._id || property.id} to={`/property/${property._id || property.id}`} className="block group focus:outline-none focus:ring-2 focus:ring-primary rounded-xl h-full">
                 <Card className="overflow-hidden hover:shadow-xl transition-shadow group cursor-pointer pt-0 h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
                     <img

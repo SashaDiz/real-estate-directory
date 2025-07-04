@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +36,26 @@ const PropertyDetailPage = () => {
     phone: '',
     message: ''
   });
+  const [stats, setStats] = useState({
+    views: 0,
+    contactRequests: 0
+  });
+
+  // Increment views when page loads
+  useEffect(() => {
+    if (property && property._id) {
+      fetch(`${API_URL}/properties/${property._id}/view`, {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        setStats(prev => ({ ...prev, views: data.views }));
+      })
+      .catch(err => {
+        console.error('Failed to increment views:', err);
+      });
+    }
+  }, [property]);
 
   if (loading) return <div className="text-center py-12">Загрузка...</div>;
   if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
@@ -72,8 +92,22 @@ const PropertyDetailPage = () => {
     );
   };
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
+    
+    // Increment contact requests
+    if (property._id) {
+      try {
+        const res = await fetch(`${API_URL}/properties/${property._id}/contact-request`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        setStats(prev => ({ ...prev, contactRequests: data.contactRequests }));
+      } catch (err) {
+        console.error('Failed to increment contact requests:', err);
+      }
+    }
+    
     // In a real app, this would send the form data to a server
     alert('Спасибо за ваш запрос! Мы свяжемся с вами в ближайшее время.');
     setContactForm({ name: '', email: '', phone: '', message: '' });
@@ -81,6 +115,19 @@ const PropertyDetailPage = () => {
 
   const handleInputChange = (field, value) => {
     setContactForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Calculate days since creation
+  const getDaysSinceCreation = () => {
+    if (!property.createdAt) return 'Недавно';
+    const created = new Date(property.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now - created);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return '1 день назад';
+    if (diffDays < 7) return `${diffDays} дней назад`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} недель назад`;
+    return `${Math.floor(diffDays / 30)} месяцев назад`;
   };
 
   return (
@@ -352,20 +399,16 @@ const PropertyDetailPage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">ID объекта</span>
-                  <span className="font-medium">#{property.id.toString().padStart(4, '0')}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-600">Размещено</span>
-                  <span className="font-medium">2 дня назад</span>
+                  <span className="font-medium">{getDaysSinceCreation()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Просмотры</span>
-                  <span className="font-medium">127</span>
+                  <span className="font-medium">{stats.views}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Запросы</span>
-                  <span className="font-medium">8</span>
+                  <span className="font-medium">{stats.contactRequests}</span>
                 </div>
               </CardContent>
             </Card>

@@ -71,13 +71,20 @@ const AdminPage = () => {
     e.preventDefault();
     const method = editMode ? 'PUT' : 'POST';
     const url = editMode ? `${API_URL}/properties/${editId}` : `${API_URL}/properties`;
+    
+    // Include uploaded images in the property data
+    const propertyData = {
+      ...newProperty,
+      images: uploadedImages
+    };
+    
     try {
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newProperty)
+        body: JSON.stringify(propertyData)
       });
       if (res.ok) {
         const property = await res.json();
@@ -198,14 +205,50 @@ const AdminPage = () => {
     setUploadedImages(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleUploadImages = () => {
+  const handleUploadImages = async () => {
     if (imagePreviews.length + uploadedImages.length > 10) {
       setImageLimitError('Максимум 10 изображений на объект.');
       return;
     }
-    setUploadedImages(prev => [...prev, ...imagePreviews].slice(0, 10));
-    setImagePreviews([]);
-    setImageLimitError('');
+
+    // Convert base64 previews back to files for upload
+    const files = [];
+    for (let i = 0; i < imagePreviews.length; i++) {
+      const base64 = imagePreviews[i];
+      const response = await fetch(base64);
+      const blob = await response.blob();
+      const file = new File([blob], `image-${i}.jpg`, { type: 'image/jpeg' });
+      files.push(file);
+    }
+
+    if (files.length === 0) {
+      setImageLimitError('Нет изображений для загрузки.');
+      return;
+    }
+
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+
+    try {
+      const res = await fetch(`${API_URL}/upload-images`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUploadedImages(prev => [...prev, ...data.imageUrls].slice(0, 10));
+        setImagePreviews([]);
+        setImageLimitError('');
+      } else {
+        const errorData = await res.json();
+        setImageLimitError(errorData.error || 'Ошибка загрузки изображений');
+      }
+    } catch {
+      setImageLimitError('Ошибка загрузки изображений');
+    }
   };
 
   const handleDeleteProperty = (id) => {

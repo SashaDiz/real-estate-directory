@@ -35,6 +35,15 @@ const MapPage = () => {
     return true;
   });
 
+  const validProperties = filteredProperties.filter(
+    property => Array.isArray(property.coordinates) &&
+      property.coordinates.length === 2 &&
+      typeof property.coordinates[0] === 'number' &&
+      typeof property.coordinates[1] === 'number' &&
+      !isNaN(property.coordinates[0]) &&
+      !isNaN(property.coordinates[1])
+  );
+
   const formatPrice = (price) => {
     if (price >= 1000000) {
       return `$${(price / 1000000).toFixed(1)}M`;
@@ -104,8 +113,8 @@ const MapPage = () => {
   };
 
   // Calculate center point of all properties
-  const centerLat = filteredProperties.reduce((sum, prop) => sum + prop.coordinates[0], 0) / filteredProperties.length || 40.7589;
-  const centerLng = filteredProperties.reduce((sum, prop) => sum + prop.coordinates[1], 0) / filteredProperties.length || -73.9851;
+  const centerLat = validProperties.reduce((sum, prop) => sum + prop.coordinates[0], 0) / validProperties.length || 40.7589;
+  const centerLng = validProperties.reduce((sum, prop) => sum + prop.coordinates[1], 0) / validProperties.length || -73.9851;
 
   return (
     <div className="min-h-screen">
@@ -116,7 +125,7 @@ const MapPage = () => {
             Карта объектов
           </h1>
           <p className="text-lg text-gray-600 mb-6">
-            Изучите {filteredProperties.length} объектов на интерактивной карте
+            Изучите {validProperties.length} объектов на интерактивной карте
           </p>
           
           {/* Filters */}
@@ -161,51 +170,49 @@ const MapPage = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {filteredProperties.map((property) => (
+            {validProperties.map((property) => (
               <Marker
-                key={property.id}
+                key={property._id || property.id}
                 position={property.coordinates}
                 icon={createCustomIcon(property.type)}
               >
                 <Popup className="custom-popup">
-                  <div className="w-64">
-                    <img
-                      src={property.images[0]}
-                      alt={property.title}
-                      className="w-full h-32 object-cover rounded-lg mb-3"
-                    />
-                    <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{property.location}</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <p className="text-xl font-bold text-primary">
-                          {formatPrice(property.price)}
-                          {property.status === 'for-rent' && <span className="text-sm text-gray-600">/мес</span>}
-                        </p>
-                        <p className="text-sm text-gray-600">{property.area} кв.м</p>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          property.status === 'for-sale' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {property.status === 'for-sale' ? 'Продажа' : 'Аренда'}
-                        </span>
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full capitalize">
-                          {property.type}
-                        </span>
-                      </div>
-                    </div>
-                    <Button asChild size="sm" className="w-full">
-                      <Link to={`/property/${property.id}`}>
-                        Подробнее
-                      </Link>
-                    </Button>
+                  <img
+                    src={property.images[0]}
+                    alt={property.title}
+                    className="w-full h-32 object-cover rounded-lg mb-3"
+                  />
+                  <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
+                  <div className="flex items-center text-gray-600 mb-2">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    <span className="text-sm">{property.location}</span>
                   </div>
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <p className="text-xl font-bold text-primary">
+                        {formatPrice(property.price)}
+                        {property.status === 'for-rent' && <span className="text-sm text-gray-600">/мес</span>}
+                      </p>
+                      <p className="text-sm text-gray-600">{property.area} кв.м</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        property.status === 'for-sale' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {property.status === 'for-sale' ? 'Продажа' : 'Аренда'}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full capitalize">
+                        {property.type}
+                      </span>
+                    </div>
+                  </div>
+                  <Button asChild size="sm" className="w-full">
+                    <Link to={`/property/${property._id || property.id}`}>
+                      Подробнее
+                    </Link>
+                  </Button>
                 </Popup>
               </Marker>
             ))}
@@ -242,12 +249,12 @@ const MapPage = () => {
 
             {/* Property List */}
             <div>
-              <h3 className="font-semibold mb-4">Объекты ({filteredProperties.length})</h3>
+              <h3 className="font-semibold mb-4">Объекты ({validProperties.length})</h3>
               <div className="space-y-4">
-                {filteredProperties.map((property) => {
+                {validProperties.map((property) => {
                   const IconComponent = getPropertyIcon(property.type);
                   return (
-                    <Card key={property.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                    <Card key={property._id || property.id} className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div 
@@ -265,7 +272,7 @@ const MapPage = () => {
                                 {property.status === 'for-rent' && <span className="text-xs">/мес</span>}
                               </span>
                               <Button asChild size="sm" variant="outline">
-                                <Link to={`/property/${property.id}`}>
+                                <Link to={`/property/${property._id || property.id}`}>
                                   Подробнее
                                 </Link>
                               </Button>
