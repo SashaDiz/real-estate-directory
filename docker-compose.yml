@@ -1,5 +1,5 @@
 services:
-  backend:
-    build: ./backend
+  app:
+    image: nginx:alpine
     ports:
-      - "9000:4000"
+      - "9000:80"
