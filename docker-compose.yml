@@ -2,18 +2,12 @@ services:
   backend:
     build: ./backend
     ports:
-      - "4000:4000"
+      - "9000:4000"
     env_file:
       - ./backend/.env
-    environment:
-      - NODE_ENV=production
-    expose:
-      - "4000"
   nginx:
     build: ./nginx
-    container_name: realestate-nginx
-    restart: always
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
