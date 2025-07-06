@@ -1,5 +1,13 @@
 services:
-  app:
-    image: nginx:alpine
+  backend:
+    build: ./backend
     ports:
-      - "9000:80"
+      - "9000:4000"
+    env_file:
+      - ./backend/.env
+  nginx:
+    build: ./nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
