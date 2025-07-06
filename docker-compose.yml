@@ -1,12 +1,4 @@
 services:
-  frontend:
-    build: .
-    container_name: realestate-frontend
-    restart: always
-    environment:
-      - NODE_ENV=production
-    depends_on:
-      - backend
   backend:
     build: ./backend
     container_name: realestate-backend
@@ -24,5 +16,4 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - frontend
       - backend
