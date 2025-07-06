@@ -18,9 +18,7 @@ Thumbs.db
 .idea/
 *.sublime-workspace
 *.sublime-project
-# Docker
-Dockerfile*
-docker-compose.yml
+
 # SSL certificates
 certs/
 # Misc
