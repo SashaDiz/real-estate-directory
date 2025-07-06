@@ -9,7 +9,7 @@ import { Search, MapPin, Building2, Store, Factory, TreePine, DollarSign, Trendi
 import { filterOptions } from '../data/properties';
 import { useProperties } from '../hooks/use-properties';
 
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_ENDPOINTS } from '../lib/api';
 
 const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');

@@ -19,7 +19,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_ENDPOINTS, apiCall } from '../lib/api';
 
 const AdminPage = () => {
   const [properties, setProperties] = useState([]);
@@ -55,8 +55,7 @@ const AdminPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/properties`)
-      .then(res => res.json())
+    apiCall(API_ENDPOINTS.properties)
       .then(data => {
         setProperties(data);
         setLoading(false);
@@ -70,7 +69,7 @@ const AdminPage = () => {
   const handleAddOrEditProperty = async (e) => {
     e.preventDefault();
     const method = editMode ? 'PUT' : 'POST';
-    const url = editMode ? `${API_URL}/properties/${editId}` : `${API_URL}/properties`;
+    const url = editMode ? API_ENDPOINTS.properties + `/${editId}` : API_ENDPOINTS.properties;
     
     // Include uploaded images in the property data
     const propertyData = {
@@ -79,27 +78,19 @@ const AdminPage = () => {
     };
     
     try {
-      const res = await fetch(url, {
+      const property = await apiCall(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(propertyData)
       });
-      if (res.ok) {
-        const property = await res.json();
-        if (editMode) {
-          setProperties(prev => prev.map(p => (p._id === editId ? property : p)));
-        } else {
-          setProperties(prev => [property, ...prev]);
-        }
-        handleCancelEdit();
+      
+      if (editMode) {
+        setProperties(prev => prev.map(p => (p._id === editId ? property : p)));
       } else {
-        const data = await res.json();
-        alert(data.error || 'Ошибка сохранения');
+        setProperties(prev => [property, ...prev]);
       }
-    } catch {
-      alert('Ошибка сохранения');
+      handleCancelEdit();
+    } catch (error) {
+      alert(error.message || 'Ошибка сохранения');
     }
   };
 
@@ -232,22 +223,16 @@ const AdminPage = () => {
     });
 
     try {
-      const res = await fetch(`${API_URL}/upload-images`, {
+      const data = await apiCall(API_ENDPOINTS.uploadImages, {
         method: 'POST',
         body: formData
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setUploadedImages(prev => [...prev, ...data.imageUrls].slice(0, 10));
-        setImagePreviews([]);
-        setImageLimitError('');
-      } else {
-        const errorData = await res.json();
-        setImageLimitError(errorData.error || 'Ошибка загрузки изображений');
-      }
-    } catch {
-      setImageLimitError('Ошибка загрузки изображений');
+      
+      setUploadedImages(prev => [...prev, ...data.imageUrls].slice(0, 10));
+      setImagePreviews([]);
+      setImageLimitError('');
+    } catch (error) {
+      setImageLimitError(error.message || 'Ошибка загрузки изображений');
     }
   };
 

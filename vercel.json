@@ -1,0 +1,7 @@
+{
+    "relatedProjects": ["prj_5RxGnCGBDudle6zjwzPEymEwfJVA"],
+    "buildCommand": "pnpm run build",
+    "outputDirectory": "dist",
+    "installCommand": "pnpm install",
+    "framework": "vite"
+  }

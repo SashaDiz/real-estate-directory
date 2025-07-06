@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_ENDPOINTS, apiCall } from '../lib/api';
 
 export function useProperties() {
   const [properties, setProperties] = useState([]);
@@ -9,8 +8,7 @@ export function useProperties() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/properties`)
-      .then(res => res.json())
+    apiCall(API_ENDPOINTS.properties)
       .then(data => {
         setProperties(data);
         setLoading(false);

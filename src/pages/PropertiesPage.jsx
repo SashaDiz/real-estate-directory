@@ -8,7 +8,7 @@ import { MapPin, Search, Filter, Grid, List } from 'lucide-react';
 import { filterOptions } from '../data/properties';
 import { useProperties } from '../hooks/use-properties';
 
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_ENDPOINTS } from '../lib/api';
 
 const PropertiesPage = ({ status }) => {
   const [filters, setFilters] = useState({

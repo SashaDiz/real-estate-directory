@@ -22,7 +22,7 @@ import {
 import PropertyMap from '../components/PropertyMap';
 import { useProperties } from '../hooks/use-properties';
 
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_ENDPOINTS, apiCall } from '../lib/api';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -44,10 +44,9 @@ const PropertyDetailPage = () => {
   // Increment views when page loads
   useEffect(() => {
     if (property && property._id) {
-      fetch(`${API_URL}/properties/${property._id}/view`, {
+      apiCall(API_ENDPOINTS.propertyView(property._id), {
         method: 'POST'
       })
-      .then(res => res.json())
       .then(data => {
         setStats(prev => ({ ...prev, views: data.views }));
       })
@@ -98,10 +97,9 @@ const PropertyDetailPage = () => {
     // Increment contact requests
     if (property._id) {
       try {
-        const res = await fetch(`${API_URL}/properties/${property._id}/contact-request`, {
+        const data = await apiCall(API_ENDPOINTS.propertyContact(property._id), {
           method: 'POST'
         });
-        const data = await res.json();
         setStats(prev => ({ ...prev, contactRequests: data.contactRequests }));
       } catch (err) {
         console.error('Failed to increment contact requests:', err);
