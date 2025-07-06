@@ -11,7 +11,7 @@ This guide explains how to build, run, and deploy your Vite React app using Dock
 ```sh
 docker compose up -d --build
 ```
-This will build and start both the frontend and backend using the Dockerfiles in `frontend/` and `backend/` respectively.
+This will build and start both the frontend and backend using the Dockerfiles in the root and `backend/` respectively.
 
 ## 3. Run the Containers Locally
 ```sh
@@ -41,7 +41,7 @@ docker compose up -d --build
 
 ## 5. Environment Variables
 - For the backend, place your `.env` file in the `backend/` directory.
-- For the frontend, use `.env` or `.env.production` in the `frontend/` directory if needed.
+- For the frontend, use `.env` or `.env.production` in the root directory if needed.
 
 ## 6. Nginx Reverse Proxy (SSL/HTTPS)
 If you want to serve your app on port 80/443 with SSL, set up Nginx as a reverse proxy. Example config:

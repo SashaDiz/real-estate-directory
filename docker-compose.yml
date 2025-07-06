@@ -5,7 +5,7 @@ networks:
 
 services:
   frontend:
-    build: ./frontend
+    build: .
     container_name: realestate-frontend
     restart: always
     environment:
@@ -27,7 +27,7 @@ services:
     networks:
       - dev
   nginx:
-    image: nginx:stable-alpine
+    image: nginx:alpine
     container_name: realestate-nginx
     restart: always
     ports:
