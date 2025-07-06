@@ -7,29 +7,30 @@ This guide explains how to build, run, and deploy your Vite React app using Dock
 - SSH access to your VPS
 - (Optional) [pnpm](https://pnpm.io/) installed locally for building
 
-## 2. Build the Docker Image Locally
+## 2. Build the Docker Images Locally (Recommended: Use Docker Compose)
 ```sh
-docker build -t realestate-app .
+docker compose up -d --build
 ```
+This will build and start both the frontend and backend using the Dockerfiles in `frontend/` and `backend/` respectively.
 
-## 3. Run the Container Locally
+## 3. Run the Containers Locally
 ```sh
-docker run -p 8080:80 --env-file .env realestate-app
+docker compose up -d
 ```
-Visit [http://localhost:8080](http://localhost:8080)
+Visit [http://localhost:80](http://localhost:80)
 
 ## 4. Deploy to VPS (Timeweb Cloud)
 **Copy files to your server:**
 ```sh
 # Using rsync (recommended)
-rsync -avz --exclude node_modules --exclude dist . user@your-vps-ip:/home/user/realestate
+rsync -avz --exclude node_modules --exclude dist . user@77.233.222.106:/home/user/realestate
 # Or using scp
-scp -r . user@your-vps-ip:/home/user/realestate
+scp -r . user@77.233.222.106:/home/user/realestate
 ```
 
 **SSH into your server:**
 ```sh
-ssh user@your-vps-ip
+ssh user@77.233.222.106
 cd ~/realestate
 ```
 
@@ -39,7 +40,8 @@ docker compose up -d --build
 ```
 
 ## 5. Environment Variables
-Copy `.env.example` to `.env` and fill in your values.
+- For the backend, place your `.env` file in the `backend/` directory.
+- For the frontend, use `.env` or `.env.production` in the `frontend/` directory if needed.
 
 ## 6. Nginx Reverse Proxy (SSL/HTTPS)
 If you want to serve your app on port 80/443 with SSL, set up Nginx as a reverse proxy. Example config:
@@ -47,7 +49,7 @@ If you want to serve your app on port 80/443 with SSL, set up Nginx as a reverse
 ```
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name 77.233.222.106;
     location / {
         proxy_pass http://localhost:80;
         proxy_set_header Host $host;

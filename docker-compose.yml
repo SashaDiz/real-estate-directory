@@ -1,13 +1,19 @@
 version: '3.8'
+
+networks:
+  dev:
+
 services:
   frontend:
-    build: .
+    build: ./frontend
     container_name: realestate-frontend
     restart: always
     environment:
       - NODE_ENV=production
     depends_on:
       - backend
+    networks:
+      - dev
   backend:
     build: ./backend
     container_name: realestate-backend
@@ -18,8 +24,10 @@ services:
       - NODE_ENV=production
     expose:
       - "4000"
+    networks:
+      - dev
   nginx:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     container_name: realestate-nginx
     restart: always
     ports:
@@ -30,6 +38,8 @@ services:
     depends_on:
       - frontend
       - backend
+    networks:
+      - dev
 
 # volumes:
 #   db_data: 
