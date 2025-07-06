@@ -21,8 +21,7 @@ import {
 } from 'lucide-react';
 import PropertyMap from '../components/PropertyMap';
 import { useProperties } from '../hooks/use-properties';
-
-import { API_ENDPOINTS, apiCall } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -44,9 +43,10 @@ const PropertyDetailPage = () => {
   // Increment views when page loads
   useEffect(() => {
     if (property && property._id) {
-      apiCall(API_ENDPOINTS.propertyView(property._id), {
+      fetch(`${API_URL}/property/view/${property._id}`, {
         method: 'POST'
       })
+      .then(response => response.json())
       .then(data => {
         setStats(prev => ({ ...prev, views: data.views }));
       })
@@ -97,9 +97,10 @@ const PropertyDetailPage = () => {
     // Increment contact requests
     if (property._id) {
       try {
-        const data = await apiCall(API_ENDPOINTS.propertyContact(property._id), {
+        const response = await fetch(`${API_URL}/property/contact/${property._id}`, {
           method: 'POST'
         });
+        const data = await response.json();
         setStats(prev => ({ ...prev, contactRequests: data.contactRequests }));
       } catch (err) {
         console.error('Failed to increment contact requests:', err);

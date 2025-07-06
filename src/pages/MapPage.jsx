@@ -8,6 +8,7 @@ import { MapPin, Building2, Store, Factory, TreePine, Car, Home } from 'lucide-r
 import { filterOptions } from '../data/properties';
 import { useProperties } from '../hooks/use-properties';
 import 'leaflet/dist/leaflet.css';
+import { API_URL } from '../lib/api';
 
 // Fix for default markers in react-leaflet
 import L from 'leaflet';
@@ -17,8 +18,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-import { API_ENDPOINTS } from '../lib/api';
 
 const MapPage = () => {
   const [selectedType, setSelectedType] = useState('all');

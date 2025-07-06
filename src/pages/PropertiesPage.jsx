@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { MapPin, Search, Filter, Grid, List } from 'lucide-react';
 import { filterOptions } from '../data/properties';
 import { useProperties } from '../hooks/use-properties';
-
-import { API_ENDPOINTS } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 const PropertiesPage = ({ status }) => {
   const [filters, setFilters] = useState({

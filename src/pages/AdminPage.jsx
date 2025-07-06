@@ -18,8 +18,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-
-import { API_ENDPOINTS, apiCall } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 const AdminPage = () => {
   const [properties, setProperties] = useState([]);
@@ -55,7 +54,8 @@ const AdminPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    apiCall(API_ENDPOINTS.properties)
+    fetch(`${API_URL}/properties`)
+      .then(res => res.json())
       .then(data => {
         setProperties(data);
         setLoading(false);
@@ -69,7 +69,7 @@ const AdminPage = () => {
   const handleAddOrEditProperty = async (e) => {
     e.preventDefault();
     const method = editMode ? 'PUT' : 'POST';
-    const url = editMode ? API_ENDPOINTS.properties + `/${editId}` : API_ENDPOINTS.properties;
+    const url = editMode ? `${API_URL}/properties/${editId}` : `${API_URL}/properties`;
     
     // Include uploaded images in the property data
     const propertyData = {
@@ -78,7 +78,7 @@ const AdminPage = () => {
     };
     
     try {
-      const property = await apiCall(url, {
+      const property = await fetch(url, {
         method,
         body: JSON.stringify(propertyData)
       });
@@ -223,7 +223,7 @@ const AdminPage = () => {
     });
 
     try {
-      const data = await apiCall(API_ENDPOINTS.uploadImages, {
+      const data = await fetch(`${API_URL}/uploadImages`, {
         method: 'POST',
         body: formData
       });

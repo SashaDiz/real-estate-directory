@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_ENDPOINTS, apiCall } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 export function useProperties() {
   const [properties, setProperties] = useState([]);
@@ -8,7 +8,8 @@ export function useProperties() {
 
   useEffect(() => {
     setLoading(true);
-    apiCall(API_ENDPOINTS.properties)
+    fetch(`${API_URL}/properties`)
+      .then(res => res.json())
       .then(data => {
         setProperties(data);
         setLoading(false);
