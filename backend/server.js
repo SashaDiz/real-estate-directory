@@ -51,7 +51,8 @@ const upload = multer({
 // Allow CORS from the deployed frontend domain
 const allowedOrigins = [
   'https://real-estate-directory-umber.vercel.app/',
-  'http://localhost:5173' // (optional) allow local dev too
+  'http://localhost:5173', // (optional) allow local dev too
+  'http://localhost:8080' // allow local docker frontend
 ];
 app.use(cors({
   origin: allowedOrigins,
@@ -64,7 +65,7 @@ app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
 const PORT = process.env.PORT || 4000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://mongodb:27017/realestate';
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
 // User schema

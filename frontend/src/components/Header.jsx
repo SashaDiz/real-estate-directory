@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import { Menu, X, Building2, Phone } from 'lucide-react';
 
 const Header = () => {

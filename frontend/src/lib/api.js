@@ -1,5 +1,5 @@
 // Simple API URL utility
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:9000/api';
 
 // API endpoints
 export const API_ENDPOINTS = {
