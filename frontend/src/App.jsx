@@ -8,6 +8,8 @@ import PropertyDetailPage from './pages/PropertyDetailPage';
 import MapPage from './pages/MapPage';
 import ContactPage from './pages/ContactPage';
 import AdminPage from './pages/AdminPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
 import './App.css';
 
 function App() {
@@ -21,7 +23,8 @@ function App() {
             <Route path="/property/:id" element={<PropertyDetailPage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+            <Route path="/login" element={<LoginPage />} />
           </Routes>
         </main>
         <Footer />

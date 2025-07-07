@@ -19,6 +19,7 @@ import {
   AlertDialogCancel,
 } from '../components/ui/alert-dialog';
 import { API_URL } from '../lib/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminPage = () => {
   const [properties, setProperties] = useState([]);
@@ -51,6 +52,8 @@ const AdminPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState(null);
   const [sortBy, setSortBy] = useState('recently-modified');
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -282,10 +285,18 @@ const AdminPage = () => {
     setDeleteDialogOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('adminLoginData');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen py-8 px-4 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Админ-панель</h1>
+        <button onClick={handleLogout} className="ml-auto bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Выйти</button>
       </div>
         <Card className="mb-8">
           <CardHeader>

@@ -114,27 +114,26 @@ mongoose.connect(MONGO_URI)
   });
 
 // Register route (for initial setup, then remove or protect)
-app.post('/api/register', async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
-  const hash = await bcrypt.hash(password, 10);
-  try {
-    const user = await User.create({ username, password: hash });
-    res.status(201).json({ username: user.username });
-  } catch {
-    res.status(400).json({ error: 'User already exists' });
-  }
-});
+// app.post('/api/register', async (req, res) => {
+//   const { username, password } = req.body;
+//   if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+//   const hash = await bcrypt.hash(password, 10);
+//   try {
+//     const user = await User.create({ username, password: hash });
+//     res.status(201).json({ username: user.username });
+//   } catch {
+//     res.status(400).json({ error: 'User already exists' });
+//   }
+// });
 
-// Login route
+// Login route (только admin/password)
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
-  const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: '1d' });
-  res.json({ token });
+  if (username === 'admin' && password === 'password') {
+    const token = jwt.sign({ username: 'admin' }, JWT_SECRET, { expiresIn: '1d' });
+    return res.json({ token });
+  }
+  return res.status(401).json({ error: 'Invalid credentials' });
 });
 
 // Get all properties (public)
