@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "9000:4000"
+    expose:
+      - "4000"
     environment:
       - MONGODB_URI=mongodb+srv://elkiwebdesign:0mrazzWaXrloYGdZ@cluster0.g0enka0.mongodb.net/realestate?retryWrites=true&w=majority
       - JWT_SECRET=your-secret-key-here
@@ -12,6 +12,6 @@ services:
   frontend:
     build: .
     ports:
-      - "8080:80"
+      - "80:80"
     depends_on:
       - backend
