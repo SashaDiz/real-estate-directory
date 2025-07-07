@@ -52,7 +52,8 @@ const upload = multer({
 const allowedOrigins = [
   'https://real-estate-directory-umber.vercel.app/',
   'http://localhost:5173', // (optional) allow local dev too
-  'http://localhost:8080' // allow local docker frontend
+  'http://localhost:8080', // allow local docker frontend
+  'http://77.233.222.106:8080' // внешний адрес фронта
 ];
 app.use(cors({
   origin: allowedOrigins,
