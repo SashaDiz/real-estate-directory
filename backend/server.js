@@ -148,13 +148,17 @@ app.get('/api/properties', async (req, res) => {
 
 // Add property (unprotected for testing)
 app.post('/api/properties', async (req, res) => {
-
+  console.log('Received property data:', req.body);
+  
   try {
     const property = new Property(req.body);
+    console.log('Created property object:', property);
     await property.save();
+    console.log('Property saved successfully:', property);
     res.status(201).json(property);
-  } catch {
-    res.status(400).json({ error: 'Failed to add property' });
+  } catch (error) {
+    console.error('Error creating property:', error);
+    res.status(400).json({ error: 'Failed to add property', details: error.message });
   }
 });
 

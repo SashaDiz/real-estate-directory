@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -19,7 +20,6 @@ import {
   AlertDialogCancel,
 } from '../components/ui/alert-dialog';
 import { API_URL } from '../lib/api';
-import { useNavigate } from 'react-router-dom';
 
 const AdminPage = () => {
   const [properties, setProperties] = useState([]);
@@ -52,8 +52,14 @@ const AdminPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState(null);
   const [sortBy, setSortBy] = useState('recently-modified');
-
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('adminLoginData');
+    navigate('/');
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -74,23 +80,36 @@ const AdminPage = () => {
     const method = editMode ? 'PUT' : 'POST';
     const url = editMode ? `${API_URL}/properties/${editId}` : `${API_URL}/properties`;
     
-    // Include uploaded images in the property data
+    // Include uploaded images in the property data and convert numeric fields
     const propertyData = {
       ...newProperty,
+      price: parseFloat(newProperty.price) || 0,
+      area: parseFloat(newProperty.area) || 0,
+      coordinates: newProperty.coordinates.length > 0 ? newProperty.coordinates.map(coord => parseFloat(coord)).filter(coord => !isNaN(coord)) : [],
       images: uploadedImages
     };
     
     try {
-      const property = await fetch(url, {
+      const response = await fetch(url, {
         method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(propertyData)
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const property = await response.json();
       
       if (editMode) {
         setProperties(prev => prev.map(p => (p._id === editId ? property : p)));
       } else {
         setProperties(prev => [property, ...prev]);
       }
+      
       handleCancelEdit();
     } catch (error) {
       alert(error.message || 'Ошибка сохранения');
@@ -239,11 +258,20 @@ const AdminPage = () => {
     }
   };
 
-  const handleDeleteProperty = (id) => {
-    const idx = properties.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      properties.splice(idx, 1);
-      setNewProperty({ ...newProperty }); // force re-render
+  const handleDeleteProperty = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/properties/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Удаляем объект из локального состояния
+      setProperties(prev => prev.filter(p => p._id !== id));
+    } catch (error) {
+      alert('Ошибка удаления: ' + error.message);
     }
   };
 
@@ -274,7 +302,7 @@ const AdminPage = () => {
 
   const handleConfirmDeleteProperty = () => {
     if (propertyToDelete) {
-      handleDeleteProperty(propertyToDelete.id);
+      handleDeleteProperty(propertyToDelete._id);
       setPropertyToDelete(null);
       setDeleteDialogOpen(false);
     }
@@ -285,18 +313,41 @@ const AdminPage = () => {
     setDeleteDialogOpen(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
-    localStorage.removeItem('adminLoginData');
-    navigate('/');
+
+
+  // Функция сортировки объектов
+  const getSortedProperties = () => {
+    const sorted = [...properties];
+    
+    switch (sortBy) {
+      case 'recently-modified':
+        return sorted.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+      case 'recently-added':
+        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'title-az':
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'title-za':
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+      case 'price-high-low':
+        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case 'price-low-high':
+        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case 'area-high-low':
+        return sorted.sort((a, b) => (b.area || 0) - (a.area || 0));
+      case 'area-low-high':
+        return sorted.sort((a, b) => (a.area || 0) - (b.area || 0));
+      default:
+        return sorted;
+    }
   };
 
   return (
     <div className="min-h-screen py-8 px-4 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Админ-панель</h1>
-        <button onClick={handleLogout} className="ml-auto bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Выйти</button>
+        <button onClick={handleLogout} className="ml-auto bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer">
+          Выйти
+        </button>
       </div>
         <Card className="mb-8">
           <CardHeader>
@@ -361,7 +412,7 @@ const AdminPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="coordinates">Координаты (широта, долгота)</Label>
-                  <Input id="coordinates" placeholder="например, 40.7128, -74.0060" value={newProperty.coordinates.join(', ')} onChange={(e) => handlePropertyChange('coordinates', e.target.value.split(',').map(s => s.trim()))} />
+                  <Input id="coordinates" placeholder="например, 40.7128, -74.0060" value={newProperty.coordinates.join(', ')} onChange={(e) => handlePropertyChange('coordinates', e.target.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)))} />
                 </div>
               </div>
               <div>
@@ -402,20 +453,20 @@ const AdminPage = () => {
                     {imagePreviews.map((src, idx) => (
                       <div key={idx} className="relative inline-block">
                         <img src={src} alt={`preview-${idx}`} className="w-20 h-20 object-cover rounded border" />
-                        <button type="button" onClick={() => handleRemovePreviewImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                        <button type="button" onClick={() => handleRemovePreviewImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs cursor-pointer">×</button>
                       </div>
                     ))}
                   </div>
                 )}
                 {imagePreviews.length > 0 && (
-                  <Button type="button" className="mt-2" onClick={handleUploadImages}>Загрузить выбранные изображения</Button>
+                  <Button type="button" className="mt-2 cursor-pointer" onClick={handleUploadImages}>Загрузить выбранные изображения</Button>
                 )}
                 {uploadedImages.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {uploadedImages.map((src, idx) => (
                       <div key={idx} className="relative inline-block">
                         <img src={src} alt={`uploaded-${idx}`} className="w-20 h-20 object-cover rounded border" />
-                        <button type="button" onClick={() => handleRemoveUploadedImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                        <button type="button" onClick={() => handleRemoveUploadedImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs cursor-pointer">×</button>
                       </div>
                     ))}
                   </div>
@@ -440,13 +491,14 @@ const AdminPage = () => {
                   id="isFeatured"
                   checked={newProperty.isFeatured}
                   onCheckedChange={(checked) => handlePropertyChange('isFeatured', checked)}
+                  className="cursor-pointer"
                 />
-                <Label htmlFor="isFeatured">Рекомендуемый объект</Label>
+                <Label htmlFor="isFeatured" className="cursor-pointer">Рекомендуемый объект</Label>
               </div>
               <div className="flex gap-2">
-              <Button type="submit">{editMode ? 'Сохранить изменения' : 'Добавить'}</Button>
+              <Button type="submit" className="cursor-pointer">{editMode ? 'Сохранить изменения' : 'Добавить'}</Button>
                 {editMode && (
-                  <Button type="button" variant="outline" onClick={handleCancelEdit}>Отмена</Button>
+                  <Button type="button" variant="outline" onClick={handleCancelEdit} className="cursor-pointer">Отмена</Button>
                 )}
               </div>
             </form>
@@ -485,55 +537,45 @@ const AdminPage = () => {
               <p>Нет объектов для отображения.</p>
             ) : (
               <div className="space-y-4">
-              {properties.map((property) => (
-                <div key={property._id || property.id} className="flex items-center justify-between border p-4 rounded-md">
-                    <div>
-                      <h3 className="font-semibold">{property.title}</h3>
+              {getSortedProperties().map((property) => (
+                <div key={property._id || property.id} className="border p-4 rounded-md">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-lg">{property.title}</h3>
+                      <div className="flex items-center space-x-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => handleEditProperty(property)} className="cursor-pointer">
+                          Редактировать
+                        </Button>
+                        <AlertDialog open={deleteDialogOpen && propertyToDelete?._id === property._id} onOpenChange={(open) => { if (!open) handleCancelDeleteProperty(); }}>
+                          <AlertDialogTrigger asChild>
+                            <Button type="button" size="sm" variant="destructive" onClick={() => handleRequestDeleteProperty(property)} className="cursor-pointer">
+                              Удалить
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить объект?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Вы уверены, что хотите удалить этот объект? Это действие нельзя отменить.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={handleCancelDeleteProperty} className="cursor-pointer">Отмена</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleConfirmDeleteProperty} className="cursor-pointer">Удалить</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <p className="text-sm text-gray-600">{property.location} - {property.type}</p>
                       <p className="text-sm text-gray-600">Цена: {property.price} - Площадь: {property.area} кв.м</p>
                       {property.investmentReturn && (
                         <p className="text-sm text-green-600">Доходность: {property.investmentReturn}</p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+
+                      <p className="text-xs text-gray-500 mt-2">
                         {getDisplayDate(property)}
                       </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                    <Label htmlFor={`featured-${property._id || property.id}`}>Рекомендуемый</Label>
-                      <Switch
-                      id={`featured-${property._id || property.id}`}
-                        checked={property.isFeatured}
-                        onCheckedChange={(checked) => {
-                        const index = properties.findIndex(p => p._id === property._id || p.id === property.id);
-                          if (index !== -1) {
-                            properties[index].isFeatured = checked;
-                            properties[index].updatedAt = new Date().toISOString();
-                            setNewProperty({ ...newProperty });
-                          }
-                        }}
-                      />
-                      <Button type="button" size="sm" variant="outline" onClick={() => handleEditProperty(property)}>
-                        Редактировать
-                      </Button>
-                    <AlertDialog open={deleteDialogOpen && propertyToDelete?.id === property._id || property.id} onOpenChange={(open) => { if (!open) handleCancelDeleteProperty(); }}>
-                        <AlertDialogTrigger asChild>
-                          <Button type="button" size="sm" variant="destructive" onClick={() => handleRequestDeleteProperty(property)}>
-                            Удалить
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Удалить объект?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Вы уверены, что хотите удалить этот объект? Это действие нельзя отменить.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={handleCancelDeleteProperty}>Отмена</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleConfirmDeleteProperty}>Удалить</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
                     </div>
                   </div>
                 ))}

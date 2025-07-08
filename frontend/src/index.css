@@ -1,0 +1,54 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+
+/* Глобальные стили для курсора */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+select,
+option,
+label[for],
+.switch,
+[data-state="checked"],
+[data-state="unchecked"],
+[data-radix-switch-root],
+[data-radix-select-trigger],
+[data-radix-select-item],
+[data-radix-alert-dialog-trigger],
+[data-radix-alert-dialog-action],
+[data-radix-alert-dialog-cancel] {
+  cursor: pointer !important;
+}
+
+/* Специальные стили для кнопок */
+.btn,
+button,
+.Button,
+[class*="Button"] {
+  cursor: pointer !important;
+}
+
+/* Стили для переключателей */
+[data-radix-switch-root] {
+  cursor: pointer !important;
+}
+
+/* Стили для селектов */
+[data-radix-select-trigger] {
+  cursor: pointer !important;
+}
+
+/* Стили для диалогов */
+[data-radix-alert-dialog-trigger] {
+  cursor: pointer !important;
+}
+
+[data-radix-alert-dialog-action] {
+  cursor: pointer !important;
+}
+
+[data-radix-alert-dialog-cancel] {
+  cursor: pointer !important;
+}
